@@ -20,6 +20,8 @@
     --blue: #89b4fa;
     --red: #f38ba8;
     --overlay: #6c7086;
+    --yellow: #f9e2af;
+    --peach: #fab387;
   }
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; }
@@ -52,6 +54,22 @@
   }
   .klein { font-size: clamp(0.95rem, 4vw, 1.2rem); margin-top: 0.4em; }
   .klein b { color: var(--blue); }
+  #eier { margin-top: 1.2em; display: flex; flex-direction: column; gap: 0.5em; align-items: center; }
+  .ei {
+    color: var(--base);
+    background: var(--yellow);
+    font-weight: 700;
+    font-size: clamp(1.1rem, 5.5vw, 1.6rem);
+    padding: 0.35em 0.8em;
+    border-radius: 999px;
+    animation: wackeln 1.2s ease-in-out infinite;
+  }
+  .ei.doener { background: var(--peach); }
+  @keyframes wackeln {
+    0%, 100% { transform: rotate(-3deg) scale(1); }
+    50% { transform: rotate(3deg) scale(1.06); }
+  }
+  @media (prefers-reduced-motion: reduce) { .ei { animation: none; } }
 </style>
 </head>
 <body>
@@ -63,6 +81,7 @@
   <hr>
   <div id="countdown">–</div>
   <div class="klein"><b id="kalender">–</b> <span class="label">Kalendertage bis 31.01.2027</span></div>
+  <div id="eier"></div>
 </main>
 <script>
 const ENDE = '2027-01-31';
@@ -107,9 +126,21 @@ function countdown() {
     `${Math.floor(r / 86400)}T ${pad(Math.floor(r % 86400 / 3600))}:${pad(Math.floor(r % 3600 / 60))}:${pad(r % 60)}`;
 }
 
+function eier(jetzt = new Date()) {
+  const liste = [];
+  const min = jetzt.getHours() * 60 + jetzt.getMinutes();
+  if (min >= 9 * 60 + 50 && min < 10 * 60 + 10) liste.push(['🍺 10-Uhr-Bier! Prost!', '']);
+  if (jetzt.getDay() === 2) liste.push(['🌯 Dürüm-Dienstag', 'doener']);
+  if (jetzt.getDay() === 4) liste.push(['🥙 Döner-Donnerstag', 'doener']);
+  const html = liste.map(([text, cls]) => `<div class="ei ${cls}">${text}</div>`).join('');
+  const el = document.getElementById('eier');
+  if (el.innerHTML !== html) el.innerHTML = html;
+}
+
 tage();
 countdown();
-setInterval(countdown, 1000);
+eier();
+setInterval(() => { countdown(); eier(); }, 1000);
 setInterval(tage, 60000);
 </script>
 </body>
