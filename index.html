@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Neue Lage</title>
+<meta name="description" content="Verbleibende Studientage (Mo–Do) bis Ende Wintersemester 31.01.2027">
+<meta property="og:title" content="Neue Lage">
+<meta property="og:description" content="Verbleibende Studientage (Mo–Do) bis Ende Wintersemester 31.01.2027">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#1e1e2e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --base: #1e1e2e;
+    --text: #cdd6f4;
+    --mauve: #cba6f7;
+    --blue: #89b4fa;
+    --red: #f38ba8;
+    --overlay: #6c7086;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--base);
+    color: var(--text);
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    text-align: center;
+  }
+  main { width: 100%; max-width: 640px; }
+  h1 { color: var(--mauve); font-size: clamp(1.8rem, 8vw, 2.6rem); }
+  hr { border: 0; border-top: 2px solid var(--overlay); margin: 0.8em 0; }
+  #tage {
+    color: var(--blue);
+    font-size: clamp(6rem, 38vw, 11rem);
+    font-weight: 700;
+    line-height: 1;
+  }
+  #tage.knapp { color: var(--red); }
+  .label { color: var(--mauve); font-size: clamp(1.1rem, 5vw, 1.5rem); }
+  #countdown {
+    color: var(--blue);
+    font-size: clamp(1.6rem, 9vw, 2.6rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .klein { font-size: clamp(0.95rem, 4vw, 1.2rem); margin-top: 0.4em; }
+  .klein b { color: var(--blue); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Neue Lage</h1>
+  <hr>
+  <div id="tage">–</div>
+  <div class="label">Studientage (Mo–Do)</div>
+  <hr>
+  <div id="countdown">–</div>
+  <div class="klein"><b id="kalender">–</b> <span class="label">Kalendertage bis 31.01.2027</span></div>
+</main>
+<script>
+const ENDE = '2027-01-31';
+// Freie Tage (nicht gezählt): 'YYYY-MM-DD' oder ['YYYY-MM-DD', 'YYYY-MM-DD'] als Bereich
+const FREIE_TAGE = [
+  '2026-12-08',                   // Mariä Empfängnis
+  ['2026-12-24', '2027-01-06'],   // Weihnachtsferien
+];
+
+const datum = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const key = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const naechster = d => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+
+const frei = new Set();
+for (const e of FREIE_TAGE) {
+  const [von, bis] = Array.isArray(e) ? e : [e, e];
+  for (let d = datum(von); d <= datum(bis); d = naechster(d)) frei.add(key(d));
+}
+
+const ende = datum(ENDE);
+const endeMitternacht = naechster(ende);
+const pad = n => String(n).padStart(2, '0');
+
+function tage() {
+  const jetzt = new Date();
+  let n = 0;
+  for (let d = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate()); d <= ende; d = naechster(d)) {
+    const wt = d.getDay();
+    if (wt >= 1 && wt <= 4 && !frei.has(key(d))) n++;
+  }
+  const heute = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate());
+  const kal = Math.max(0, Math.round((ende - heute) / 86400000) + 1);
+  const el = document.getElementById('tage');
+  el.textContent = n;
+  el.classList.toggle('knapp', n <= 10);
+  document.getElementById('kalender').textContent = kal;
+}
+
+function countdown() {
+  const r = Math.max(0, Math.floor((endeMitternacht - new Date()) / 1000));
+  document.getElementById('countdown').textContent =
+    `${Math.floor(r / 86400)}T ${pad(Math.floor(r % 86400 / 3600))}:${pad(Math.floor(r % 3600 / 60))}:${pad(r % 60)}`;
+}
+
+tage();
+countdown();
+setInterval(countdown, 1000);
+setInterval(tage, 60000);
+</script>
+</body>
+</html>
