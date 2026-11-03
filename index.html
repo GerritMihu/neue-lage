@@ -22,9 +22,10 @@
     --overlay: #6c7086;
     --yellow: #f9e2af;
     --peach: #fab387;
+    --green: #a6e3a1;
   }
   * { box-sizing: border-box; margin: 0; }
-  html, body { height: 100%; }
+  html, body { height: 100%; overflow-x: hidden; }
   body {
     background: var(--base);
     color: var(--text);
@@ -43,8 +44,14 @@
     font-size: clamp(6rem, 38vw, 11rem);
     font-weight: 700;
     line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   #tage.knapp { color: var(--red); }
+  #tage.fertig { color: var(--green); font-size: clamp(3rem, 17vw, 6rem); }
   .label { color: var(--mauve); font-size: clamp(1.1rem, 5vw, 1.5rem); }
   #countdown {
     color: var(--blue);
@@ -65,10 +72,64 @@
     animation: wackeln 1.2s ease-in-out infinite;
   }
   .ei.doener { background: var(--peach); }
+  .ei.ruhig { background: var(--mauve); }
   @keyframes wackeln {
     0%, 100% { transform: rotate(-3deg) scale(1); }
     50% { transform: rotate(3deg) scale(1.06); }
   }
+  .regen {
+    position: fixed;
+    top: -3rem;
+    pointer-events: none;
+    z-index: 10;
+    animation: fallen linear forwards;
+  }
+  @keyframes fallen { to { transform: translateY(calc(100vh + 6rem)) rotate(360deg); } }
+  #krug {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5em;
+    background: rgba(17, 17, 27, 0.9);
+    color: var(--yellow);
+    font-size: clamp(1.4rem, 7vw, 2.2rem);
+    font-weight: 700;
+  }
+  #krug[hidden] { display: none; }
+  .glas-wrap { position: relative; }
+  .glas {
+    position: relative;
+    width: 140px;
+    height: 200px;
+    border: 6px solid var(--text);
+    border-top: none;
+    border-radius: 0 0 18px 18px;
+    overflow: hidden;
+  }
+  .henkel {
+    position: absolute;
+    right: -46px;
+    top: 40px;
+    width: 46px;
+    height: 100px;
+    border: 6px solid var(--text);
+    border-left: none;
+    border-radius: 0 30px 30px 0;
+  }
+  .bier {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 0;
+    background: linear-gradient(var(--yellow), var(--peach));
+    border-top: 22px solid #fff;
+    animation: fuellen 3s ease-out forwards;
+  }
+  @keyframes fuellen { from { height: 0; } to { height: 88%; } }
   @media (prefers-reduced-motion: reduce) { .ei { animation: none; } }
 </style>
 </head>
@@ -77,12 +138,16 @@
   <h1>Neue Lage</h1>
   <hr>
   <div id="tage">–</div>
-  <div class="label">Studientage (Mo–Do)</div>
+  <div class="label" id="tage-label">Studientage (Mo–Do)</div>
   <hr>
   <div id="countdown">–</div>
   <div class="klein"><b id="kalender">–</b> <span class="label">Kalendertage bis 31.01.2027</span></div>
   <div id="eier"></div>
 </main>
+<div id="krug" hidden>
+  <div class="glas-wrap"><div class="glas"><div class="bier"></div></div><div class="henkel"></div></div>
+  <div>Prost! 🍻</div>
+</div>
 <script>
 const ENDE = '2027-01-31';
 // Freie Tage (nicht gezählt): 'YYYY-MM-DD' oder ['YYYY-MM-DD', 'YYYY-MM-DD'] als Bereich
@@ -105,20 +170,39 @@ const ende = datum(ENDE);
 const endeMitternacht = naechster(ende);
 const pad = n => String(n).padStart(2, '0');
 
-function tage() {
-  const jetzt = new Date();
+let studientage = 0;
+
+function tage(jetzt = new Date()) {
   let n = 0;
   for (let d = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate()); d <= ende; d = naechster(d)) {
     const wt = d.getDay();
     if (wt >= 1 && wt <= 4 && !frei.has(key(d))) n++;
   }
+  studientage = n;
   const heute = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate());
   const kal = Math.max(0, Math.round((ende - heute) / 86400000) + 1);
   const el = document.getElementById('tage');
-  el.textContent = n;
-  el.classList.toggle('knapp', n <= 10);
+  el.textContent = n === 0 ? 'FERTIG!' : n;
+  el.classList.toggle('knapp', n > 0 && n <= 10);
+  el.classList.toggle('fertig', n === 0);
+  document.getElementById('tage-label').textContent = n === 0 ? 'Geschafft! 🎓' : 'Studientage (Mo–Do)';
   document.getElementById('kalender').textContent = kal;
 }
+
+function regen(zeichen, anzahl = 50) {
+  for (let i = 0; i < anzahl; i++) {
+    const s = document.createElement('span');
+    s.className = 'regen';
+    s.textContent = zeichen[Math.floor(Math.random() * zeichen.length)];
+    s.style.left = Math.random() * 92 + 'vw';
+    s.style.fontSize = 1.2 + Math.random() * 1.6 + 'rem';
+    s.style.animationDuration = 2 + Math.random() * 2 + 's';
+    s.style.animationDelay = Math.random() * 1.5 + 's';
+    s.addEventListener('animationend', () => s.remove());
+    document.body.appendChild(s);
+  }
+}
+const konfetti = () => regen(['🎉', '🎊', '✨', '🥳']);
 
 function countdown() {
   const r = Math.max(0, Math.floor((endeMitternacht - new Date()) / 1000));
@@ -126,20 +210,65 @@ function countdown() {
     `${Math.floor(r / 86400)}T ${pad(Math.floor(r % 86400 / 3600))}:${pad(Math.floor(r % 3600 / 60))}:${pad(r % 60)}`;
 }
 
-function eier(jetzt = new Date()) {
+const istSilvester = d => d.getMonth() === 11 && d.getDate() === 31;
+
+function eier(jetzt = new Date(), n = studientage) {
   const liste = [];
   const min = jetzt.getHours() * 60 + jetzt.getMinutes();
-  if (min >= 9 * 60 + 50 && min < 10 * 60 + 10) liste.push(['🍺 10-Uhr-Bier! Prost!', '']);
-  if (jetzt.getDay() === 2) liste.push(['🌯 Dürüm-Dienstag', 'doener']);
-  if (jetzt.getDay() === 4) liste.push(['🥙 Döner-Donnerstag', 'doener']);
+  const zwischen = (von, bis) => min >= von && min < bis;
+  const tag = jetzt.getDay();
+
+  if (zwischen(9 * 60 + 50, 10 * 60 + 10)) liste.push(['🍺 10-Uhr-Bier! Prost!', '']);
+  if (zwischen(12 * 60, 12 * 60 + 30)) liste.push(['🥨 Mahlzeit!', '']);
+  if (min === 13 * 60 + 37) liste.push(['⏰ 13:37 – leet', 'ruhig']);
+  if (zwischen(14 * 60, 14 * 60 + 30)) liste.push(['😴 Mittagstief: Konzentration auf Werkseinstellung', 'ruhig']);
+  if (min >= 23 * 60 || min < 4 * 60) liste.push(['🌙 Geh schlafen, die Arbeit ist morgen auch noch da', 'ruhig']);
+
+  if (tag === 2) liste.push(['🌯 Dürüm-Dienstag', 'doener']);
+  if (tag === 4) liste.push(['🥙 Döner-Donnerstag', 'doener']);
+  if (tag === 5) liste.push(['🍻 Feierabend-Freitag! Wochenende eingeläutet', 'doener']);
+  if (tag === 0 || tag === 6) liste.push(['🛋️ Wochenende. Studium? Nie gehört.', 'ruhig']);
+
+  if (istSilvester(jetzt)) liste.push(['🎆 Guten Rutsch!', '']);
+  else if (frei.has(key(jetzt))) liste.push(['🎄 Frei! Die Zahl bleibt eh stehen', 'ruhig']);
+
+  if (n === 42) liste.push(['🌌 42 – die Antwort auf alles', 'ruhig']);
+  if (n === 30 || n === 20 || n === 10) liste.push([`💪 Nur noch ${n}! Durchhalten!`, '']);
+
   const html = liste.map(([text, cls]) => `<div class="ei ${cls}">${text}</div>`).join('');
   const el = document.getElementById('eier');
   if (el.innerHTML !== html) el.innerHTML = html;
 }
 
+// 5x auf die Zahl tippen: Döner-Regen
+let taps = 0, tapTimer;
+document.getElementById('tage').addEventListener('click', () => {
+  taps++;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => { taps = 0; }, 1500);
+  if (taps >= 5) { taps = 0; regen(['🥙']); }
+});
+
+// Konami-Code: Bierkrug füllt sich
+const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+let konamiPos = 0;
+const krug = document.getElementById('krug');
+document.addEventListener('keydown', e => {
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  konamiPos = k === KONAMI[konamiPos] ? konamiPos + 1 : (k === KONAMI[0] ? 1 : 0);
+  if (konamiPos === KONAMI.length) {
+    konamiPos = 0;
+    const alt = krug.querySelector('.bier');
+    alt.replaceWith(alt.cloneNode());
+    krug.hidden = false;
+  }
+});
+krug.addEventListener('click', () => { krug.hidden = true; });
+
 tage();
 countdown();
 eier();
+if (studientage === 0 || istSilvester(new Date())) konfetti();
 setInterval(() => { countdown(); eier(); }, 1000);
 setInterval(tage, 60000);
 </script>
