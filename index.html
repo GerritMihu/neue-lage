@@ -265,6 +265,13 @@ document.addEventListener('keydown', e => {
 });
 krug.addEventListener('click', () => { krug.hidden = true; });
 
+// Manchmal: Auberginen und Pfirsiche (alle 3–10 Minuten)
+function obstRegen() {
+  regen(['🍆', '🍑'], 25);
+  setTimeout(obstRegen, (3 + Math.random() * 7) * 60000);
+}
+setTimeout(obstRegen, (0.5 + Math.random() * 2.5) * 60000);
+
 tage();
 countdown();
 eier();
